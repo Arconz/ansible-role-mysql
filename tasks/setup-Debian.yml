@@ -38,7 +38,7 @@
     cmd: "mysql --version || mariadb --version"
   register: db_version_output
   changed_when: false
-  ignore_errors: yes
+  ignore_errors: true
 
 - set_fact:
     mariadb_version: "{{ db_version_output.stdout | regex_replace('.*Distrib ([0-9]+\\.[0-9]+).*', '\\1') }}"
