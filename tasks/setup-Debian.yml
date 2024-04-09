@@ -27,28 +27,31 @@
 # MariaDB after version 10.5 resized the log file based on settings
 # Clearing the log file in these version breaks the install
 
-- name: Ensure MySQL is stopped after initial install.
+- name: Ensure MySQL is stopped after initial install
   ansible.builtin.service:
     name: "{{ mysql_daemon }}"
     state: stopped
   when: not mysql_installed.stat.exists
 
-- name: Check MariaDB or MySQL version
+- name: Check MariaDB version
   ansible.builtin.shell:
-    cmd: "mysql --version || mariadb --version"
-  register: db_version_output
+    cmd: "mariadb --version"
+  register: mariadb_version_output
   changed_when: false
   ignore_errors: true
 
-- set_fact:
-    mariadb_version: "{{ db_version_output.stdout | regex_replace('.*Distrib ([0-9]+\\.[0-9]+).*', '\\1') }}"
-  when: db_version_output.stdout is match('.*Distrib [0-9]+\\.[0-9]+.*')
+- debug:
+    var: mariadb_version_output.stdout
 
-- name: Delete innodb log files created by apt package after initial install
+- set_fact:
+    mariadb_version: "{{ mariadb_version_output.stdout | regex_replace('.*Distrib ([0-9]+\\.[0-9]+\\.[0-9]+).*', '\\1') }}"
+  when: mariadb_version_output.stdout is match('.*Distrib [0-9]+\\.[0-9]+\\.[0-9]+.*')
+
+- name: Delete InnoDB log files created by apt package after initial install
   ansible.builtin.file:
     path: "{{ mysql_datadir }}/{{ item }}"
     state: absent
-  with_items:
+  loop:
     - ib_logfile0
     - ib_logfile1
   when: >
